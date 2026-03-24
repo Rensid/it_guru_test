@@ -1,8 +1,8 @@
 """init
 
-Revision ID: bf6e269f05a6
+Revision ID: 11df74401620
 Revises: 
-Create Date: 2026-03-21 17:00:29.438060
+Create Date: 2026-03-24 17:07:06.292147
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'bf6e269f05a6'
+revision: str = '11df74401620'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('orders',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
-    sa.Column('payment_status', sa.Enum('NOT_PAID', 'PARTIALLY_PAID', 'PAID', name='orderpaymentstatus', native_enum=False), server_default=sa.text("'not_paid'"), nullable=False),
+    sa.Column('payment_status', sa.String(), server_default=sa.text("'not_paid'"), nullable=False),
     sa.CheckConstraint("payment_status IN ('not_paid', 'partially_paid', 'paid')", name='check_order_payment_status'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -33,8 +33,9 @@ def upgrade() -> None:
     sa.Column('order_id', sa.Integer(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('type', sa.Enum('CASH', 'ACQUIRING', name='paymenttype', native_enum=False), nullable=False),
-    sa.Column('status', sa.Enum('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', name='paymentstatus', native_enum=False), nullable=False),
+    sa.Column('status', sa.String(), nullable=True),
     sa.Column('bank_payment_id', sa.String(), nullable=True),
+    sa.CheckConstraint("status IN ('pending', 'success', 'failed', 'refunded')", name='check_order_payment_status'),
     sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

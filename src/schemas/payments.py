@@ -1,6 +1,17 @@
 from pydantic import BaseModel
+from enum import Enum
 
-from src.models.models import PaymentType
+
+class PaymentStatus(str, Enum):
+    PENDING = "pending"
+    SUCCESS = "success"
+    FAILED = "failed"
+    REFUNDED = "refunded"
+
+
+class PaymentType(str, Enum):
+    CASH = "cash"
+    ACQUIRING = "acquiring"
 
 
 class PaymentAddSchema(BaseModel):

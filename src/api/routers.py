@@ -1,20 +1,23 @@
-from fastapi import APIRouter
+from typing import Annotated
+from fastapi import APIRouter, Depends
 
-from src.api.dependencies import UOWDep
-from src.services.payments import PaymentsService
+from src.api.dependencies import UOWDep, get_process
+from src.services.payments import BasePaymentService
 from src.schemas.payments import PaymentAddSchema
 
 router = APIRouter(prefix="/payment")
 
 
 @router.post("/deposit")
-async def deposit(uow: UOWDep, data: PaymentAddSchema):
-    payment = await PaymentsService().add_payment(uow, data)
+async def deposit(
+    uow: UOWDep,
+    data: PaymentAddSchema,
+    service: Annotated[BasePaymentService, Depends(get_process)],
+):
+    payment = await service.deposite(uow, data)
     return payment
 
 
-@router.delete("/refund")
-async def refund(
-    uow: UOWDep,
-):
+@router.delete("/refund/{payment_id}")
+async def refund(uow: UOWDep, payment_id: int):
     pass

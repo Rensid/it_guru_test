@@ -38,6 +38,9 @@ class SQLAlchemyRepository(AbstractRepository):
         res = [row[0].to_read_model() for row in res.all()]
         return res
 
+    async def find_all_with_filter(self, **filter_by):
+        pass
+
     async def find_one(self, **filter_by):
         stmt = select(self.model).filter_by(**filter_by)
         res = await self.session.execute(stmt)
