@@ -23,7 +23,7 @@ class BasePaymentService(ABC):
 
 
 class CashPaymentService(BasePaymentService):
-    async def deposite(self, uow: IUnitOfWork, data: PaymentAddSchema):
+    async def deposite(self, uow: IUnitOfWork, data: PaymentAddSchema, **kwargs):
         raw_data = data.model_dump()
         async with uow:
             order = await uow.orders.find_one(id=data.order_id)
@@ -50,7 +50,7 @@ class CashPaymentService(BasePaymentService):
             await uow.orders.edit_one(order.id, {"payment_status": new_status})
             await uow.commit()
 
-    async def refund(self, uow: IUnitOfWork, payment_id: int):
+    async def refund(self, uow: IUnitOfWork, payment_id: int, **kwargs):
         async with uow:
             payment = await uow.payments.find_one(id=payment_id)
 
@@ -110,10 +110,55 @@ class AcquiringService(BasePaymentService):
                     "bank_payment_id": bank_payment_id,
                 }
             )
+            await uow.commit()
+            return {
+                "payment_id": payment.id,
+                "bank_payment_id": bank_payment_id,
+            }
+
+    async def refund(
+        self,
+        uow: IUnitOfWork,
+        payment_id: int,
+        http_uow: Optional[HttpUoW] = None,
+    ):
+        if http_uow is None:
+            raise ValueError("http_uow is required for AcquiringService")
+
+        async with uow:
+            payment = await uow.payments.find_one(id=payment_id)
+
+            if not payment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Payment not found",
+                )
+
+            if payment.status != PaymentStatus.SUCCESS:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Only successful payments can be refunded",
+                )
+
+            async with http_uow:
+                bank_data = await http_uow.bank.acquiring_check(payment.bank_payment_id)
+
+            bank_status = bank_data.get("status")
+
+            if bank_status != "refunded":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Payment is not refunded in bank system",
+                )
+
+            await uow.payments.update_one(
+                {"id": payment_id},
+                {"status": PaymentStatus.REFUNDED},
+            )
 
             await uow.commit()
 
             return {
                 "payment_id": payment.id,
-                "bank_payment_id": bank_payment_id,
+                "status": PaymentStatus.REFUNDED,
             }

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from sqlalchemy import ColumnElement, insert, select, update
+from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -39,7 +39,10 @@ class SQLAlchemyRepository(AbstractRepository):
         return res
 
     async def find_all_with_filter(self, **filter_by):
-        pass
+        stmt = select(self.model).filter_by(**filter_by)
+        res = await self.session.execute(stmt)
+        res = res.scalars().all()
+        return res
 
     async def find_one(self, **filter_by):
         stmt = select(self.model).filter_by(**filter_by)

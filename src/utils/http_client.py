@@ -7,14 +7,12 @@ class ExternalApiError(Exception):
 
 
 class HttpUoW:
-    def __init__(self, base_url: str):
-        self.base_url = base_url
+    def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
-        self.bank: Optional[BankHttpClient] = BankHttpClient()
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
-        self.bank = BankHttpClient(base_url=self.base_url, session=self.session)
+        self.bank = BankHttpClient(session=self.session)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -44,8 +42,8 @@ class BaseHttpClient:
 
 
 class BankHttpClient(BaseHttpClient):
-    def __init__(self, base_url: str, session: aiohttp.ClientSession):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, session: aiohttp.ClientSession):
+        self.base_url = "bank.api"
         self.session = session
 
     async def acquiring_start(self, order_id: int, amount: float) -> str:
